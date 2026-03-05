@@ -19,9 +19,8 @@ void readData() {
         }
         L += alpha[i] * exp(-1); 
     } 
-    C = int(L * 0.8); // can also be 0.6 and now we know C
+    C = int(L * 0.8); data << seed << "," << C << ",";
     V = vector<vector<float>>(T + 1, vector<float>(C, 0.0f)); 
-    data << seed << "," << C << ",";
 }
 
 void smartdp() {
@@ -32,14 +31,11 @@ void smartdp() {
                 float lhs = alpha[t] * lambda[t][p] * (prices[p] + V[t + 1][x - 1]); // SALE
                 float rhs = (1 - alpha[t] * lambda[t][p]) * V[t + 1][x]; // NO SALE
                 if (lhs + rhs > maximum) {
-                    maximum = rhs + lhs; 
-                    optimalprice = prices[p];
+                    maximum = rhs + lhs; optimalprice = prices[p];
                 } 
-            }
-            V[t][x] = maximum;
+            } V[t][x] = maximum;
         }
-    }
-    data << V[0][C - 1] << ",";
+    } data << V[0][C - 1] << ",";
 }
 
 void splitsim() {
@@ -65,16 +61,15 @@ void splitsim() {
             }
         }
     }
-    int c1 = 0, c2 = 0, s1 = 0, s2 = 0;
-    float best_calc_rev = 0.0f, best_sim_rev = 0.0f;
+    int c1 = 0, c2 = 0, s1 = 0, s2 = 0; float best_calc_rev = 0.0f, best_sim_rev = 0.0f;
     for (int i = 0; i < P; i++) {
         for (int j = 0; j < P; j++) {
             if (sim_rev[i][j]  > best_sim_rev)  { best_sim_rev  = sim_rev[i][j];  s1 = i; s2 = j; }
             if (calc_rev[i][j] > best_calc_rev) { best_calc_rev = calc_rev[i][j]; c1 = i; c2 = j; }
         }
     }
-    data << best_calc_rev << "," << prices[c1] << "," << prices[c2] << "," << best_sim_rev / dumbRuns 
-    << "," << prices[s1] << "," << prices[s2] << ",";
+    data << best_calc_rev << "," << prices[c1] << "," << prices[c2] << "," 
+    << best_sim_rev / dumbRuns << "," << prices[s1] << "," << prices[s2] << ",";
 }
 
 void dumbsim() {
