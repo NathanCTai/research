@@ -4,11 +4,10 @@
 #include <iostream>
 using namespace std;
 
-int T = 100, P = 21, C = 0, dumbRuns = 1000; float L = 0.0f; 
+int T = 100, P = 21, C = 0, dumbRuns = 1000, mainRuns = 20; float L = 0.0f; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; 
 vector<float> alpha(T), gamma(T), prices(P); // V_t(x) is (T + 1) x C;
-ofstream data("data.csv");
-random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
+ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
 uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.1f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
@@ -103,20 +102,13 @@ void dumbsim() {
 int main() {
     data << "seed,capacity,smart_dp,split_calc_rev,split_calc_p1,split_calc_p2,split_sim_rev,"
          << "split_sim_p1,split_sim_p2,dumb_calc_rev,dumb_calc_p,dumb_sim_rev,dum_sim_p\n";
-    
-    int runs = 20;
-    for (int r = 0; r < runs; r++) {
-        L = 0.0f; C = 0;
-        seed = rd();
-        gen.seed(seed);
+    for (int r = 0; r < mainRuns; r++) {
+        L = 0.0f; C = 0; seed = rd(); gen.seed(seed);
         fill(alpha.begin(), alpha.end(), 0.0f);
         fill(gamma.begin(), gamma.end(), 0.0f);
         lambda.assign(T, vector<float>());
         V.assign(T + 1, vector<float>());
-        readData();
-        smartdp();
-        splitsim();
-        dumbsim();
+        readData(); smartdp(); splitsim(); dumbsim();
     }
     return 0;
 }
