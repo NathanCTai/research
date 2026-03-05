@@ -1,0 +1,15 @@
+{
+	"seed": 360500005,
+	"capacity": 21,
+	"smart_dp": 121.181,
+	"split_calc_rev": 118.367,
+	"split_calc_p1": 5,
+	"split_calc_p2": 6,
+	"split_sim_rev": 111.559,
+	"split_sim_p1": 7,
+	"split_sim_p2": 7,
+	"dumb_calc_rev": 117.962,
+	"dumb_calc_p": 6,
+	"dumb_sim_rev": 112.196,
+	"dumb_sim_p": 7
+}
