@@ -4,15 +4,15 @@
 #include <iostream>
 using namespace std;
 
-int T = 1000, P = 21, C = 0, dumbRuns = 1000, mainRuns = 3; float L = 0.0f; 
+int T = 100, P = 21, C = 0, dumbRuns = 1000, mainRuns = 3; float L = 0.0f; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; 
 vector<float> alpha(T), gamma(T), prices(P); // V_t(x) is (T + 1) x C;
 ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
-uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.1f, 0.4f), coin(0.0f, 1.0f);
+uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.3f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
     for (int i = 0; i < T; i++) {
-        alpha[i] = alpha_dist(gen); gamma[i] = gamma_dist(gen); lambda[i].resize(P);
+        alpha[i] = alpha_dist(gen); gamma[i] = gamma_dist(gen) - float(i / 500); lambda[i].resize(P);
         for (int j = 0; j < P; j++) {
             if (i == 0) {prices[j] = float(j);} // reading in prices
             lambda[i][j] = exp(-gamma[i] * prices[j]); 
@@ -39,7 +39,7 @@ void smartdp() {
 }
 
 void splitsim() {
-    const int split = 200;
+    const int split = 20;
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
     vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
     for (int i = 0; i < P; i++) {
