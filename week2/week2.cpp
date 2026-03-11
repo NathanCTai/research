@@ -39,7 +39,7 @@ void smartdp() {
 }
 
 void splitsim() {
-    const int split = 1;
+    const int split = 50;
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
     vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
     for (int i = 0; i < P; i++) {
