@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-int T = 100, P = 21, C = 0, dumbRuns = 1000, mainRuns = 20; float L = 0.0f; 
+int T = 1000, P = 21, C = 0, dumbRuns = 1000, mainRuns = 1; float L = 0.0f; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; 
 vector<float> alpha(T), gamma(T), prices(P); // V_t(x) is (T + 1) x C;
 ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
@@ -39,7 +39,7 @@ void smartdp() {
 }
 
 void splitsim() {
-    const int split = 50;
+    const int split = 200;
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
     vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
     for (int i = 0; i < P; i++) {
