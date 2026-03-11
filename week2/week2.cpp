@@ -39,7 +39,7 @@ void smartdp() {
 }
 
 void splitsim() {
-    const int split = 20;
+    const int split = 1;
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
     vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
     for (int i = 0; i < P; i++) {
@@ -60,8 +60,7 @@ void splitsim() {
                         { qty--; sim_rev[i][j] += p2; }
             }
         }
-    }
-    int c1 = 0, c2 = 0, s1 = 0, s2 = 0; float best_calc_rev = 0.0f, best_sim_rev = 0.0f;
+    } int c1 = 0, c2 = 0, s1 = 0, s2 = 0; float best_calc_rev = 0.0f, best_sim_rev = 0.0f;
     for (int i = 0; i < P; i++) {
         for (int j = 0; j < P; j++) {
             if (sim_rev[i][j]  > best_sim_rev)  { best_sim_rev  = sim_rev[i][j];  s1 = i; s2 = j; }
