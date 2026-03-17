@@ -4,23 +4,21 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 21, split = 20, dumbRuns = 1000, mainRuns = 10; int C = 0; 
+const int T = 100, P = 41, split1 = 20, split2 = 40, dumbRuns = 1000, mainRuns = 10; int C = 0; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; read in theta from the start
 vector<float> alpha(T, 0.0f), gamma(T, 0.0f), prices(P, 0.0f), theta1(P, 0.0f), theta2(P, 0.0f);
 ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
 uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.1f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
-    for (int p = 0; p < P; p++) {
-        prices[p] = float(p);
+    for (int p = 0; p < P; p++) { prices[p] = float(p) * 0.5;
         for (int t = 0; t < T; t++) {
             if (p == 0) {alpha[t] = alpha_dist(gen); gamma[t] = gamma_dist(gen); lambda[t].resize(P); }
             lambda[t][p] = exp(-gamma[t] * prices[p]); 
-            if (t <  split) { theta1[p] += alpha[t] * lambda[t][p]; }
-            if (t >= split) { theta2[p] += alpha[t] * lambda[t][p]; } // new way of calculating theta
+            if (t <  split1) { theta1[p] += alpha[t] * lambda[t][p]; }
+            if (t >= split1) { theta2[p] += alpha[t] * lambda[t][p]; } // new way of calculating theta
         }
-    }
-    C = int(accumulate(alpha.begin(), alpha.end(), 0.0f) * 0.29); data << seed << "," << C << ",";
+    } C = int(accumulate(alpha.begin(), alpha.end(), 0.0f) * 0.29); data << seed << "," << C << ",";
     V = vector<vector<float>>(T + 1, vector<float>(C, 0.0f)); 
 }
 
@@ -41,15 +39,14 @@ void smartdp() {
 
 void splitsim() {
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
-    vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
     for (int p1 = 0; p1 < P; p1++) {
         for (int p2 = 0; p2 < P; p2++) {
             for (int k = 0; k < dumbRuns; k++) {
                 int qty = C - 1; 
-                for (int t = 0; t < split; t++)
+                for (int t = 0; t < split1; t++)
                     if (coin(gen) < alpha[t] && coin(gen) < lambda[t][p1] && qty > 0)
                         { qty--; sim_rev[p1][p2] += prices[p1]; }
-                for (int t = split; t < T; t++)
+                for (int t = split1; t < T; t++)
                     if (coin(gen) < alpha[t] && coin(gen) < lambda[t][p2] && qty > 0)
                         { qty--; sim_rev[p1][p2] += prices[p2]; }
             }
