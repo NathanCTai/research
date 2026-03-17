@@ -4,10 +4,10 @@
 #include <iostream>
 using namespace std;
 
-int T = 100, P = 21, C = 0, dumbRuns = 1000, mainRuns = 3; float L = 0.0f; 
+int T = 100, P = 21, C = 0, dumbRuns = 1000, mainRuns = 1; float L = 0.0f; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; 
 vector<float> alpha(T), gamma(T), prices(P); // V_t(x) is (T + 1) x C;
-ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
+ofstream data("data.csv"), theta_log("log.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
 uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.25f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
@@ -52,6 +52,7 @@ void splitsim() {
             for (int t = split; t < T; t++)  theta2 += alpha[t] * lambda[t][p2];
             float exp1 = min((float)C, theta1);
             calc_rev[i][j] = p1 * exp1 + p2 * min((float)C - exp1, theta2);
+            theta_log << p1 << "," << p2 << "," << theta1 << "," << theta2 << "," << log(theta1) << "," << log(theta2) << "\n";
             for (int k = 0; k < dumbRuns; k++) {
                 int qty = C - 1;
                 for (int t = 0; t < split; t++)
@@ -98,6 +99,7 @@ void dumbsim() {
 int main() {
     data << "seed,capacity,smart_dp,split_calc_rev,split_calc_p1,split_calc_p2,split_sim_rev,"
          << "split_sim_p1,split_sim_p2,dumb_calc_rev,dumb_calc_p,dumb_sim_rev,dum_sim_p\n";
+    theta_log << "p1,p2,theta1,theta2,log_t1,log_t2\n";
     for (int r = 0; r < mainRuns; r++) {
         L = 0.0f; C = 0; seed = rd(); gen.seed(seed);
         fill(alpha.begin(), alpha.end(), 0.0f);
