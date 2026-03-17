@@ -96,6 +96,10 @@ int main() {
         C = 0; seed = rd(); gen.seed(seed);
         lambda.assign(T, vector<float>());
         V.assign(T + 1, vector<float>());
+        fill(theta1.begin(), theta1.end(), 0.0f);
+        fill(theta2.begin(), theta2.end(), 0.0f);
+        fill(alpha.begin(),  alpha.end(),  0.0f);
+        fill(gamma.begin(),  gamma.end(),  0.0f);
         readData(); smartdp(); splitsim(); dumbsim();
     }
     return 0;
