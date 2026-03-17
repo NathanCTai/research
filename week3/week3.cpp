@@ -4,11 +4,11 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 21, dumbRuns = 1000, mainRuns = 1; int C = 0; 
-vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; 
-vector<float> alpha(T), gamma(T), prices(P), theta1(P), theta2(P); // Read in theta from the start
+const int T = 100, P = 21, split = 20, dumbRuns = 1000, mainRuns = 1; int C = 0; 
+vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; read in theta from the start
+vector<float> alpha(T, 0.0f), gamma(T, 0.0f), prices(P, 0.0f), theta1(P, 0.0f), theta2(P, 0.0f);
 ofstream data("data.csv"), theta_log("log.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
-uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.25f, 0.4f), coin(0.0f, 1.0f);
+uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.1f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
     for (int p = 0; p < P; p++) {
@@ -16,10 +16,14 @@ void readData() {
         for (int t = 0; t < T; t++) {
             if (p == 0) {alpha[t] = alpha_dist(gen); gamma[t] = gamma_dist(gen); lambda[t].resize(P); }
             lambda[t][p] = exp(-gamma[t] * prices[p]); 
+            if (t <  split) { theta1[p] += alpha[t] * lambda[t][p]; }
+            if (t >= split) { theta2[p] += alpha[t] * lambda[t][p]; }
         }
     }
-    float L = accumulate(alpha.begin(), alpha.end(), 0.0f);
-    C = int(L * 0.8 *  exp(-1)); data << seed << "," << C << ",";
+    for (int p = 0; p < P; p++) {
+        printf("p : %d, theta1 : %f, theta2 : %f \n", p, theta1[p], theta2[p]);
+    }
+    C = int(accumulate(alpha.begin(), alpha.end(), 0.0f) * 0.29); data << seed << "," << C << ",";
     V = vector<vector<float>>(T + 1, vector<float>(C, 0.0f)); 
 }
 
@@ -100,8 +104,6 @@ int main() {
     theta_log << "p1,p2,theta1,theta2,log_t1,log_t2\n";
     for (int r = 0; r < mainRuns; r++) {
         C = 0; seed = rd(); gen.seed(seed);
-        fill(alpha.begin(), alpha.end(), 0.0f);
-        fill(gamma.begin(), gamma.end(), 0.0f);
         lambda.assign(T, vector<float>());
         V.assign(T + 1, vector<float>());
         readData(); smartdp(); splitsim(); dumbsim();
