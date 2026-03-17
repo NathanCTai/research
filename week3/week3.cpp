@@ -25,7 +25,7 @@ void readData() {
 
 void smartdp(int start, int end, int cap) {
     vector<vector<float>> V = vector<vector<float>>(T + 1, vector<float>(cap, 0.0f));
-    for (int t = start; t >= end; t--) { 
+    for (int t = end - 1; t >= start; t--) { 
         for (int x = 1; x < cap; x++) {
             float maximum = 0.0; float optimalprice = 0.0; 
             for (int p = 0; p < P; p++) { 
