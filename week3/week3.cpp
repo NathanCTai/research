@@ -4,10 +4,10 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 21, split = 20, dumbRuns = 1000, mainRuns = 1; int C = 0; 
+const int T = 100, P = 21, split = 20, dumbRuns = 1000, mainRuns = 10; int C = 0; 
 vector<vector<float>> lambda(T), V(T + 1); // λ_t(p) is T x P; read in theta from the start
 vector<float> alpha(T, 0.0f), gamma(T, 0.0f), prices(P, 0.0f), theta1(P, 0.0f), theta2(P, 0.0f);
-ofstream data("data.csv"), theta_log("log.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
+ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
 uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_dist(0.1f, 0.4f), coin(0.0f, 1.0f);
 
 void readData() {
@@ -17,11 +17,8 @@ void readData() {
             if (p == 0) {alpha[t] = alpha_dist(gen); gamma[t] = gamma_dist(gen); lambda[t].resize(P); }
             lambda[t][p] = exp(-gamma[t] * prices[p]); 
             if (t <  split) { theta1[p] += alpha[t] * lambda[t][p]; }
-            if (t >= split) { theta2[p] += alpha[t] * lambda[t][p]; }
+            if (t >= split) { theta2[p] += alpha[t] * lambda[t][p]; } // new way of calculating theta
         }
-    }
-    for (int p = 0; p < P; p++) {
-        printf("p : %d, theta1 : %f, theta2 : %f \n", p, theta1[p], theta2[p]);
     }
     C = int(accumulate(alpha.begin(), alpha.end(), 0.0f) * 0.29); data << seed << "," << C << ",";
     V = vector<vector<float>>(T + 1, vector<float>(C, 0.0f)); 
@@ -43,33 +40,27 @@ void smartdp() {
 }
 
 void splitsim() {
-    const int split = 20;
     vector<vector<float>> sim_rev(P, vector<float>(P, 0.0f));
     vector<vector<float>> calc_rev(P, vector<float>(P, 0.0f));
-    for (int i = 0; i < P; i++) {
-        for (int j = 0; j < P; j++) {
-            int p1 = prices[i], p2 = prices[j];
-            float theta1 = 0.0f, theta2 = 0.0f;
-            for (int t = 0; t < split; t++)  theta1 += alpha[t] * lambda[t][p1];
-            for (int t = split; t < T; t++)  theta2 += alpha[t] * lambda[t][p2];
-            float exp1 = min((float)C, theta1);
-            calc_rev[i][j] = p1 * exp1 + p2 * min((float)C - exp1, theta2);
-            theta_log << p1 << "," << p2 << "," << theta1 << "," << theta2 << "," << log(theta1) << "," << log(theta2) << "\n";
+    for (int p1 = 0; p1 < P; p1++) {
+        for (int p2 = 0; p2 < P; p2++) {
             for (int k = 0; k < dumbRuns; k++) {
-                int qty = C - 1;
+                int qty = C - 1; 
                 for (int t = 0; t < split; t++)
                     if (coin(gen) < alpha[t] && coin(gen) < lambda[t][p1] && qty > 0)
-                        { qty--; sim_rev[i][j] += p1; }
+                        { qty--; sim_rev[p1][p2] += prices[p1]; }
                 for (int t = split; t < T; t++)
                     if (coin(gen) < alpha[t] && coin(gen) < lambda[t][p2] && qty > 0)
-                        { qty--; sim_rev[i][j] += p2; }
+                        { qty--; sim_rev[p1][p2] += prices[p2]; }
             }
         }
     } int c1 = 0, c2 = 0, s1 = 0, s2 = 0; float best_calc_rev = 0.0f, best_sim_rev = 0.0f;
-    for (int i = 0; i < P; i++) {
-        for (int j = 0; j < P; j++) {
-            if (sim_rev[i][j]  > best_sim_rev)  { best_sim_rev  = sim_rev[i][j];  s1 = i; s2 = j; }
-            if (calc_rev[i][j] > best_calc_rev) { best_calc_rev = calc_rev[i][j]; c1 = i; c2 = j; }
+    for (int p1 = 0; p1 < P; p1++) {
+        for (int p2 = 0; p2 < P; p2++) {
+            float lhs = min(theta1[p1], float(C)) * prices[p1];
+            float rhs = min(float(C - min(theta1[p1], float(C))), theta2[p2]) * prices[p2];
+            if (sim_rev[p1][p2] > best_sim_rev)  { best_sim_rev = sim_rev[p1][p2]; s1 = p1; s2 = p2; }
+            if (lhs + rhs > best_calc_rev) { best_calc_rev = lhs + rhs; c1 = p1; c2 = p2; }
         }
     }
     data << best_calc_rev << "," << prices[c1] << "," << prices[c2] << "," 
@@ -101,7 +92,6 @@ void dumbsim() {
 int main() {
     data << "seed,capacity,smart_dp,split_calc_rev,split_calc_p1,split_calc_p2,split_sim_rev,"
          << "split_sim_p1,split_sim_p2,dumb_calc_rev,dumb_calc_p,dumb_sim_rev,dum_sim_p\n";
-    theta_log << "p1,p2,theta1,theta2,log_t1,log_t2\n";
     for (int r = 0; r < mainRuns; r++) {
         C = 0; seed = rd(); gen.seed(seed);
         lambda.assign(T, vector<float>());
