@@ -5,11 +5,11 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 41, Split1 = 20, Split2 = 40, DumbRuns = 1000, MainRuns = 1; int C = 0; 
+const int T = 100, P = 41, Split1 = 20, Split2 = 40, DumbRuns = 1000, MainRuns = 80; int C = 0; 
 vector<vector<float>> lambda(T); // λ_t(p) is T x P; read in theta from the start
 vector<float> alpha(T), gamma(T), prices(P), theta1(P), theta2(P);
 ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
-uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_unif_dist(0.1f, 0.4f), gamma_linr_dist(0.1f, 0.2f), gamma_gap_dist(0.1f, 0.25f), gamma_expr_dist(0.3f, 0.4f), coin(0.0f, 1.0f);
+uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_unif_dist(0.1f, 0.4f), gamma_linr_dist(0.1f, 0.2f), gamma_gap_dist(0.1f, 0.25f), gamma_expr_dist(0.2f, 0.4f), coin(0.0f, 1.0f);
 
 void readData(string mode) {
     fill(theta1.begin(), theta1.end(), 0.0f); fill(alpha.begin(), alpha.end(), 0.0f); 
@@ -136,9 +136,9 @@ int main() {
     for (int r = 0; r < MainRuns; r++) {
         C = 0; seed = rd(); gen.seed(seed);
         lambda.assign(T, vector<float>());
-        if (r < MainRuns / 3 ) { readData("Linear"); }
-        if (r > MainRuns / 3 && r < MainRuns * 2 / 3 ) { readData("Uniform"); }
-        if (r > MainRuns * 2 / 3) { readData("Gap"); }
+        if (r < MainRuns / 4 ) { readData("Linear"); }
+        if (r > MainRuns / 4 && r < MainRuns / 2 ) { readData("Uniform"); }
+        if (r > MainRuns / 2 && r < MainRuns * 3 / 4 ) { readData("Gap"); }
         else { readData("Exponential"); }
         deterministicdp(0, Split1, T, C); smartdp(0, T, C); splitsim(0, Split1, T, C); dumbsim(0, T, C);
     }
