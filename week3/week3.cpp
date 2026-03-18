@@ -5,29 +5,30 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 41, Split1 = 20, Split2 = 40, DumbRuns = 1000, MainRuns = 80; int C = 0; 
+const int T = 100, P = 41, Split1 = 20, Split2 = 40, DumbRuns = 1000, MainRuns = 12; int C = 0; 
 vector<vector<float>> lambda(T); // λ_t(p) is T x P; read in theta from the start
 vector<float> alpha(T), gamma(T), prices(P), theta1(P), theta2(P);
 ofstream data("data.csv"); random_device rd; unsigned int seed = rd(); mt19937 gen(seed); 
 uniform_real_distribution<float> alpha_dist(0.5f, 1.0f), gamma_unif_dist(0.1f, 0.4f), gamma_linr_dist(0.1f, 0.2f), gamma_gap_dist(0.1f, 0.25f), gamma_expr_dist(0.2f, 0.4f), coin(0.0f, 1.0f);
 
-void readData(string mode) {
+void readData(int mode) {
     fill(theta1.begin(), theta1.end(), 0.0f); fill(alpha.begin(), alpha.end(), 0.0f); 
     fill(theta2.begin(), theta2.end(), 0.0f); fill(gamma.begin(), gamma.end(), 0.0f);
     for (int p = 0; p < P; p++) { prices[p] = float(p) * 0.5;
         for (int t = 0; t < T; t++) {
             if (p == 0) {
                 float gammat = 0;
-                if (mode == "Linear") { gammat = gamma_linr_dist(gen) + float(t) / 500; }
-                if (mode == "Uniform") { gammat = gamma_unif_dist(gen); }
-                if (mode == "Gap") { gammat = gamma_gap_dist(gen) + ((t > 50) ? 0.15f : 0.0f); }
-                if (mode == "Exponential") { gammat = gamma_expr_dist(gen) - 0.2 * pow(0.98, float(t) / 4.0); } 
+                if (mode == 0) { gammat = gamma_linr_dist(gen) + float(t) / 500; }
+                if (mode == 1) { gammat = gamma_unif_dist(gen); }
+                if (mode == 2) { gammat = gamma_gap_dist(gen) + ((t > 50) ? 0.15f : 0.0f); }
+                if (mode == 3) { gammat = gamma_expr_dist(gen) - 0.2 * pow(0.9, float(t) / 40); } 
                 alpha[t] = alpha_dist(gen); gamma[t] = gammat; lambda[t].resize(P); 
             }
             lambda[t][p] = exp(-gamma[t] * prices[p]); 
             if (t <  Split1) { theta1[p] += alpha[t] * lambda[t][p]; }
             if (t >= Split1) { theta2[p] += alpha[t] * lambda[t][p]; } // new way of calculating theta
         }
+        
     } C = int(accumulate(alpha.begin(), alpha.end(), 0.0f) * 0.29); data << seed << "," << mode << "," << C << ",";
 }
 
@@ -136,10 +137,7 @@ int main() {
     for (int r = 0; r < MainRuns; r++) {
         C = 0; seed = rd(); gen.seed(seed);
         lambda.assign(T, vector<float>());
-        if (r < MainRuns / 4 ) { readData("Linear"); }
-        if (r > MainRuns / 4 && r < MainRuns / 2 ) { readData("Uniform"); }
-        if (r > MainRuns / 2 && r < MainRuns * 3 / 4 ) { readData("Gap"); }
-        else { readData("Exponential"); }
+        readData(r / 3);
         deterministicdp(0, Split1, T, C); smartdp(0, T, C); splitsim(0, Split1, T, C); dumbsim(0, T, C);
     }
     return 0;
