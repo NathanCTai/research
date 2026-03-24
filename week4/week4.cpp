@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 41, Runs = 1000, Sims = 20, gap = 10; int C = 0;
+const int T = 100, P = 41, Runs = 1000, Sims = 20; int C = 0;
 vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
 vector<vector<float>> Lambda(T);
 vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
@@ -76,7 +76,7 @@ float staticOneFareSim() {
     return *max_element(rev.begin(), rev.end()) / Runs;
 }
 
-void fillTFPreComp() { // Stores the INDICES of the optimal P1 at every time/capacity combination
+void fillTFrecalc() { // Stores the INDICES of the optimal P1 at every time/capacity combination
     for (int t = 0; t < T; t++) {
         TFPreCompP1DX[t].assign(C, 0);
         for (int c = 0; c < C; c++) {
@@ -91,16 +91,14 @@ void fillTFPreComp() { // Stores the INDICES of the optimal P1 at every time/cap
                     float exp1 = min(float(c), theta1);
                     float calc_rev = Prices[p1] * exp1 + Prices[p2] * min(float(c) - exp1, theta2);
                     if (calc_rev > best_rev) { best_p1_idx = p1; best_rev = calc_rev; }
-                    // printf("calc_rev: %f, best_rev: %f \n", calc_rev, best_rev);
                 }
             }
             TFPreCompP1DX[t][c] = best_p1_idx; 
-            // printf("TFPrecomp[%d][%d] = %d \n", t, c, best_p1_idx);
         }
     }
 }
 
-float simTFRecalc(int gap) {
+float recalcTF(int gap) {
     float rev = 0.0f;
     for (int run = 0; run < Runs; run++) {
         int stock = C; 
@@ -109,7 +107,6 @@ float simTFRecalc(int gap) {
                 int p = TFPreCompP1DX[s][stock];
                 if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p] && stock > 0) {
                     stock -= 1; rev += Prices[p];
-                    // printf("rev: %f, price: %f \n", rev, Prices[p]);
                 }
             }
         }
@@ -121,16 +118,16 @@ int main() {
     vector<int> Gaps = {10, 5, 2, 1};
     ofstream data("data.csv");
     for (int gap : Gaps) {
-        data << "Two_Fare_Recalc_Sim(" << gap << "),";
+        data << "TF_Recalc(" << gap << "),";
     }
     data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
     for (int sim = 0; sim < Sims; sim++) {
         Seed = rd(); Gen.seed(Seed);
         resetData();
         readData();
-        fillTFPreComp();
+        fillTFrecalc();
         for (int gap : Gaps) {
-            data << simTFRecalc(gap) << ",";
+            data << recalcTF(gap) << ",";
         }
         data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
     }
