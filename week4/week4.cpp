@@ -4,11 +4,11 @@
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 41, Runs = 1000, Sims = 6, gap = 10; int C = 0;
+const int T = 100, P = 41, Runs = 1000, Sims = 20, gap = 10; int C = 0;
 vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
 vector<vector<float>> Lambda(T);
 vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
-random_device rd; unsigned int seed = rd(); mt19937 Gen(seed);
+random_device rd; unsigned int Seed = rd(); mt19937 Gen(Seed);
 uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(0.0f, 0.1f), Coin(0.0f, 1.0f);
 
 void resetData() {
@@ -118,13 +118,21 @@ float simTFRecalc(int gap) {
 }
 
 int main() {
+    vector<int> Gaps = {10, 5, 2, 1};
     ofstream data("data.csv");
-    data << "Two_Fare_Recalc_Sim,DP_Calc,DP_Sim,One_Fare_Static_Sim\n";
+    for (int gap : Gaps) {
+        data << "Two_Fare_Recalc_Sim(" << gap << "),";
+    }
+    data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
     for (int sim = 0; sim < Sims; sim++) {
+        Seed = rd(); Gen.seed(Seed);
         resetData();
         readData();
         fillTFPreComp();
-        data << simTFRecalc(10) << "," << calcDP() << "," << simDP() << "," << staticOneFareSim() << "\n";
+        for (int gap : Gaps) {
+            data << simTFRecalc(gap) << ",";
+        }
+        data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
     }
     return 0;
 }
