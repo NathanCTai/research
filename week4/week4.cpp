@@ -86,8 +86,8 @@ void fillTFrecalc() { // Stores the INDICES of the optimal P1 at every time/capa
             for (int p1 = 0; p1 < P; p1++) {
                 for (int p2 = 0; p2 < P; p2++) {
                     float theta1 = 0.0f, theta2 = 0.0f;
-                    for (int u = 0; u < split; u++)  theta1 += Alpha[t] * Lambda[t][p1];
-                    for (int u = split; u < T; u++)  theta2 += Alpha[t] * Lambda[t][p2];
+                    for (int u = 0; u < split; u++) theta1 += Alpha[u] * Lambda[u][p1];
+                    for (int u = split; u < T; u++) theta2 += Alpha[u] * Lambda[u][p2];
                     float exp1 = min(float(c), theta1);
                     float calc_rev = Prices[p1] * exp1 + Prices[p2] * min(float(c) - exp1, theta2);
                     if (calc_rev > best_rev) { best_p1_idx = p1; best_rev = calc_rev; }
@@ -104,7 +104,7 @@ float recalcTF(int gap) {
         int stock = C; 
         for (int s = 0; s < T; s = s + gap) {
             for (int t = s; t < s + gap; t++) {
-                int p = TFPreCompP1DX[t][stock];
+                int p = TFPreCompP1DX[s][stock];
                 if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p] && stock > 0) {
                     stock -= 1; rev += Prices[p];
                 }
