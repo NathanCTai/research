@@ -104,7 +104,7 @@ float recalcTF(int gap) {
         int stock = C; 
         for (int s = 0; s < T; s = s + gap) {
             for (int t = s; t < s + gap; t++) {
-                int p = TFPreCompP1DX[s][stock];
+                int p = TFPreCompP1DX[t][stock];
                 if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p] && stock > 0) {
                     stock -= 1; rev += Prices[p];
                 }
