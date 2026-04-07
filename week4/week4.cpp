@@ -9,7 +9,7 @@ vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
 vector<vector<float>> Lambda(T);
 vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
 random_device rd; unsigned int Seed = rd(); mt19937 Gen(Seed);
-uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(0.0f, 0.1f), Coin(0.0f, 1.0f);
+uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(0.3f, 0.4f), Coin(0.0f, 1.0f);
 
 void resetData() {
     fill(Alpha.begin(), Alpha.end(), 0.0f);
@@ -21,13 +21,12 @@ void resetData() {
 void readData() {
     for (int t = 0; t < T; t++) {
         Alpha[t] = AlphaDist(Gen);
-        Gamma[t] = 1.2 - exp(-float(t) / 451) - GammaDist(Gen);
+        Gamma[t] = -exp(-3 * t / T) / 5 + GammaDist(Gen);
         for (int p = 0; p < P; p++) {
             if (t == 0) { Prices[p] = float(p) / 2.0; }
             Lambda[t][p] = exp(-Gamma[t] * Prices[p]);
         }
-    }
-    C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * 0.3);
+    } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * 0.3);
 }
 
 float calcDP() {
@@ -101,7 +100,7 @@ void fillTFrecalc() { // Stores the INDICES of the optimal P1 at every time/capa
 float recalcTF(int gap) {
     float rev = 0.0f;
     for (int run = 0; run < Runs; run++) {
-        int stock = C; 
+        int stock = C;
         for (int s = 0; s < T; s = s + gap) {
             for (int t = s; t < s + gap; t++) {
                 int p = TFPreCompP1DX[s][stock];
