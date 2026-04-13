@@ -10,7 +10,7 @@ const int T = 100, P = 41, Runs = 1000, Sims = 20; int C, Seed = 0; float K = 5.
 vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
 vector<vector<float>> Lambda(T);
 vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
-mt19937 Gen(Seed);
+mt19937 Gen(Seed); vector<string> Categories = {"Uniform", "Linear", "Exp_Gentle", "Exp_Steep", "Concave"};
 uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(-0.1f, 0.1f), Coin(0.0f, 1.0f);
 
 void resetData() {
@@ -51,7 +51,7 @@ float calcDP() {
                 } 
             } DP[t][x] = maximum;
         }
-    } return DP[0][C - 1];
+    } return DP[0][C];
 }
 
 float simDP() {
@@ -83,12 +83,12 @@ float staticOneFareSim() {
     return *max_element(rev.begin(), rev.end()) / Runs;
 }
 
-void fillTFrecalc() { // Stores the INDICES of the optimal P1 at every time/capacity combination
+void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every time/capacity combination
     for (int t = 0; t < T; t++) {
-        TFPreCompP1DX[t].assign(C, 0);
+        TFPreCompP1DX[t].assign(C, 0); int split = 0;
         for (int c = 0; c < C; c++) {
-            int split = T * 0.2 + t * 0.8;
-            // int split = T * 0.5 + t * 0.5;
+            if (table == 0) { split = T * 0.2 + t * 0.8; }
+            else { split = T * 0.5 + t * 0.5; }
             float best_rev = 0; int best_p1_idx = 0;
             for (int p1 = 0; p1 < P; p1++) {
                 for (int p2 = 0; p2 < P; p2++) {
@@ -122,25 +122,21 @@ float recalcTF(int gap) {
 }
 
 int main() {
-    vector<int> Gaps = {10, 5};
     ofstream data("data.csv");
     data << "mode,mult,";
-    for (int gap : Gaps) {
-        data << "TF_Recalc(" << gap << "),";
-    }
+    data << "TF_Recalc(10,20-80),TF_Recalc(5,20-80),TF_Recalc(10,50-50),TF_Recalc(5,50-50),";
     data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
-    for (int sim = 0; sim < Sims; sim++) {
+    for (int sim = 1; sim <= Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
         for (int mode = 0; mode < 5; mode++) {
             for (float mult = 0.6; mult < 0.9; mult = mult + 0.1f) {
-                vector<string> categories = {"Uniform", "Linear", "Exp_Gentle", "Exp_Steep", "Concave"};
+                data << Categories[mode] << "," << mult << ",";
                 resetData();
                 readData(mode, mult);
-                fillTFrecalc();
-                data << categories[mode] << "," << mult << ",";
-                for (int gap : Gaps) {
-                    data << recalcTF(gap) << ",";
-                }
+                fillTFrecalc(0); // 20-80 split
+                data << recalcTF(10) << "," << recalcTF(5) << ",";
+                fillTFrecalc(1); // 50-50 split
+                data << recalcTF(10) << "," << recalcTF(5) << ",";
                 data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
             }
         }
