@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include <string>
 #include <random>
 #include <fstream>
 #include <iostream>
@@ -123,6 +124,7 @@ float recalcTF(int gap) {
 int main() {
     vector<int> Gaps = {10, 5};
     ofstream data("data.csv");
+    data << "mode,mult,";
     for (int gap : Gaps) {
         data << "TF_Recalc(" << gap << "),";
     }
@@ -131,9 +133,11 @@ int main() {
         Seed = sim; Gen.seed(Seed);
         for (int mode = 0; mode < 5; mode++) {
             for (float mult = 0.6; mult < 0.9; mult = mult + 0.1f) {
+                vector<string> categories = {"Uniform", "Linear", "Exp_Gentle", "Exp_Steep", "Concave"};
                 resetData();
                 readData(mode, mult);
                 fillTFrecalc();
+                data << categories[mode] << "," << mult << ",";
                 for (int gap : Gaps) {
                     data << recalcTF(gap) << ",";
                 }
