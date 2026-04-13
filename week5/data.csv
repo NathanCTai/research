@@ -1,4 +1,4 @@
-mode,mult,TF_Recalc(10,20-80),TF_Recalc(5,20-80),TF_Recalc(10,50-50),TF_Recalc(5,50-50),DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed
+mode,mult,TF_Recalc(10:20-80),TF_Recalc(5:20-80),TF_Recalc(10:50-50),TF_Recalc(5:50-50),DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed
 Uniform,0.6,92.842,92.0125,93.713,92.794,97.66,97.6925,89.83,1
 Uniform,0.7,96.602,97.992,97.7495,97.4795,103.773,103.061,96.226,1
 Uniform,0.8,100.108,100.299,101.468,101.099,106.149,107.12,99.1595,1

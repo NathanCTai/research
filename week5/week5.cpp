@@ -124,7 +124,7 @@ float recalcTF(int gap) {
 int main() {
     ofstream data("data.csv");
     data << "mode,mult,";
-    data << "TF_Recalc(10,20-80),TF_Recalc(5,20-80),TF_Recalc(10,50-50),TF_Recalc(5,50-50),";
+    data << "TF_Recalc(10:20-80),TF_Recalc(5:20-80),TF_Recalc(10:50-50),TF_Recalc(5:50-50),";
     data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
     for (int sim = 1; sim <= Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
