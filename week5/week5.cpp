@@ -1,15 +1,16 @@
+#include <cmath>
 #include <vector>
 #include <random>
 #include <fstream>
 #include <iostream>
 using namespace std;
 
-const int T = 100, P = 41, Runs = 1000, Sims = 20; int C, Seed = 0;
+const int T = 100, P = 41, Runs = 1000, Sims = 20; int C, Seed = 0; float K = 5.0;
 vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
 vector<vector<float>> Lambda(T);
 vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
 mt19937 Gen(Seed);
-uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(0.3f, 0.4f), Coin(0.0f, 1.0f);
+uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(-0.1f, 0.1f), Coin(0.0f, 1.0f);
 
 void resetData() {
     fill(Alpha.begin(), Alpha.end(), 0.0f);
@@ -18,22 +19,28 @@ void resetData() {
     TFPreCompP1DX.assign(T, vector<int>(P, 0));
 }
 
-void readData() {
-    for (int t = 0; t < T; t++) {
-        Alpha[t] = AlphaDist(Gen);
-        Gamma[t] = -exp(-3 * t / T) / 5 + GammaDist(Gen);
+void readData(int mode) {
+    for (float t = 0.0; t < T; t = t + 1.0) {
+        Alpha[t] = AlphaDist(Gen); int g = T - 1;
+        switch(mode) {
+            case 0: Gamma[t] = 0.25 + GammaDist(Gen); break; // UNIFORM BASELINE
+            case 1: Gamma[t] = 0.1 + 0.3 * t / g + GammaDist(Gen); break; // LINEAR
+            case 2: Gamma[t] = 0.1 * exp(log(4) * t / g) + GammaDist(Gen); break; // EXP GENTLE
+            case 3: Gamma[t] = 0.1 + 0.3 * (exp(K * t / g - 1) / (exp(K) - 1)) + GammaDist(Gen); break; // EXP STEEP
+            case 4: Gamma[t] = 0.1 + 0.3 * (1 - exp(-K * t / g)) / (1 - exp(-K)) + GammaDist(Gen); break; // CONCAVE
+        }
         for (int p = 0; p < P; p++) {
             if (t == 0) { Prices[p] = float(p) / 2.0; }
             Lambda[t][p] = exp(-Gamma[t] * Prices[p]);
         }
-    } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * 0.3);
+    } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * 0.8 * exp(-1));
 }
 
 float calcDP() {
-    vector<vector<float>> DP(T + 1, vector<float>(C, 0.0f));
+    vector<vector<float>> DP(T + 1, vector<float>(C + 1, 0.0f));
     for (int t = T - 1; t > -1; t--) { 
-        DPsugIDX[t].assign(C, 0); // DP suggests price INDICES to charge at 
-        for (int x = 1; x < C; x++) {
+        DPsugIDX[t].assign(C + 1, 0); // DP suggests price INDICES to charge at 
+        for (int x = 1; x < C + 1; x++) {
             float maximum = 0.0;
             for (int p = 0; p < P; p++) { 
                 float lhs = Alpha[t] * Lambda[t][p] * (Prices[p] + DP[t + 1][x - 1]);
@@ -122,13 +129,15 @@ int main() {
     data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
     for (int sim = 0; sim < Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
-        resetData();
-        readData();
-        fillTFrecalc();
-        for (int gap : Gaps) {
-            data << recalcTF(gap) << ",";
+        for (int mode = 0; mode < 5; mode++) {
+            resetData();
+            readData(mode);
+            fillTFrecalc();
+            for (int gap : Gaps) {
+                data << recalcTF(gap) << ",";
+            }
+            data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
         }
-        data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
     }
     return 0;
 }
