@@ -19,7 +19,7 @@ void resetData() {
     TFPreCompP1DX.assign(T, vector<int>(P, 0));
 }
 
-void readData(int mode) {
+void readData(int mode, float mult) {
     for (float t = 0.0; t < T; t = t + 1.0) {
         Alpha[t] = AlphaDist(Gen); int g = T - 1;
         switch(mode) {
@@ -33,7 +33,7 @@ void readData(int mode) {
             if (t == 0) { Prices[p] = float(p) / 2.0; }
             Lambda[t][p] = exp(-Gamma[t] * Prices[p]);
         }
-    } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * 0.8 * exp(-1));
+    } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * mult * exp(-1));
 }
 
 float calcDP() {
@@ -130,13 +130,15 @@ int main() {
     for (int sim = 0; sim < Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
         for (int mode = 0; mode < 5; mode++) {
-            resetData();
-            readData(mode);
-            fillTFrecalc();
-            for (int gap : Gaps) {
-                data << recalcTF(gap) << ",";
+            for (float mult = 0.6; mult < 0.9; mult = mult + 0.1f) {
+                resetData();
+                readData(mode, mult);
+                fillTFrecalc();
+                for (int gap : Gaps) {
+                    data << recalcTF(gap) << ",";
+                }
+                data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
             }
-            data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
         }
     }
     return 0;
