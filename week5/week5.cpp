@@ -102,7 +102,7 @@ float staticTwoFareSim(int split) {
                 if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p2]) {
                     for (int p1 = 0; p1 < P; p1++) {
                         stock[p1][p2] -= 1;
-                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p1]; }
+                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p2]; }
                     }
                 }
             }
