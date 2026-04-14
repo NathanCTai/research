@@ -83,6 +83,38 @@ float staticOneFareSim() {
     return *max_element(rev.begin(), rev.end()) / Runs;
 }
 
+float staticTwoFareSim(int split) {
+    vector<vector<float>> rev(P, vector<float>(P, 0.0f));
+    for (int run = 0; run < Runs; run++) {
+        vector<vector<int>> stock(P, vector<int>(P, C));
+        for (int t = 0; t < split; t++) {
+            for (int p1 = 0; p1 < P; p1++) {
+                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p1]) {
+                    for (int p2 = 0; p2 < P; p2++) {
+                        stock[p1][p2] -= 1;
+                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p1]; }
+                    }
+                }
+            }
+        }
+        for (int t = split; t < T; t++) {
+            for (int p2 = 0; p2 < P; p2++) {
+                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p2]) {
+                    for (int p1 = 0; p1 < P; p1++) {
+                        stock[p1][p2] -= 1;
+                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p1]; }
+                    }
+                }
+            }
+        }
+    }
+    float max = 0.0;
+    for (const auto& row : rev)
+        for (float val : row)
+            if (val > max) max = val;
+    return max / Runs;
+}
+
 void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every time/capacity combination
     for (int t = 0; t < T; t++) {
         TFPreCompP1DX[t].assign(C, 0); int split = 0;
@@ -125,7 +157,7 @@ int main() {
     ofstream data("data.csv");
     data << "mode,mult,";
     data << "TF_Recalc(10:20-80),TF_Recalc(5:20-80),TF_Recalc(10:50-50),TF_Recalc(5:50-50),";
-    data << "DP_Calc,DP_Sim,One_Fare_Static_Sim,Seed\n";
+    data << "DP_Calc,DP_Sim,TF_Static_Sim(20-80),TF_Static_Sim(50-50),OF_Static_Sim,Seed\n";
     for (int sim = 1; sim <= Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
         for (int mode = 0; mode < 5; mode++) {
@@ -137,7 +169,7 @@ int main() {
                 data << recalcTF(10) << "," << recalcTF(5) << ",";
                 fillTFrecalc(1); // 50-50 split
                 data << recalcTF(10) << "," << recalcTF(5) << ",";
-                data << calcDP() << "," << simDP() << "," << staticOneFareSim() << "," << Seed << "\n";
+                data << calcDP() << "," << simDP() << "," << staticTwoFareSim(20) << "," << staticTwoFareSim(50) << "," << staticOneFareSim() << "," << Seed << "\n";
             }
         }
     }
