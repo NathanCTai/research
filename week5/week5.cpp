@@ -30,15 +30,15 @@ void readData(int mode, float mult) {
             case 0: Gamma[t] = 0.25 + GammaDist(Gen); break; // UNIFORM BASELINE
             case 1: Gamma[t] = 0.1 + 0.3 * t / g + GammaDist(Gen); break; // LINEAR
             case 2: Gamma[t] = 0.1 * exp(log(4) * t / g) + GammaDist(Gen); break; // EXP GENTLE
-            case 3: Gamma[t] = 0.1 + 0.3 * (exp(K * t / g - 1) / (exp(K) - 1)) + GammaDist(Gen); break; // EXP STEEP
-            case 4: Gamma[t] = 0.1 + 0.3 * (1 - exp(-K * t / g)) / (1 - exp(-K)) + GammaDist(Gen); break; // CONCAVE
+            case 3: Gamma[t] = 0.1 + 0.3 * (exp(K * t / g - 1) / (exp(K) - 1)) + GammaDist(Gen); break; 
+            case 4: Gamma[t] = 0.1 + 0.3 * (1 - exp(-K * t / g)) / (1 - exp(-K)) + GammaDist(Gen); break;
         }
         for (int p = 0; p < P; p++) {
             if (t == 0) { Prices[p] = float(p) / 2.0; }
             Lambda[t][p] = exp(-Gamma[t] * Prices[p]);
-            if (t < 20) { Theta1[p] += Alpha[t] * Lambda[t][p]; }
-            if (t > 19 && t < 50) { ThetaMid[p] += Alpha[t] * Lambda[t][p];}
-            if (t > 49) { Theta2[p] += Alpha[t] * Lambda[t][p]; }
+            if (t < 20) { Theta1[p] += Alpha[t] * Lambda[t][p]; } // expected sales [0, 19]
+            if (t > 19 && t < 50) { ThetaMid[p] += Alpha[t] * Lambda[t][p];} // [20, 49]
+            if (t > 49) { Theta2[p] += Alpha[t] * Lambda[t][p]; } // expected sales [50, 99]
         }
     } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * mult * exp(-1));
 }
@@ -70,8 +70,7 @@ float simDP() {
                 stock -= 1; rev += Prices[priceIDX];
             }
         }
-    }
-    return rev / Runs;
+    } return rev / Runs;
 }
 
 float staticOneFareSim() {
@@ -85,8 +84,7 @@ float staticOneFareSim() {
                 }
             }
         }
-    }
-    return *max_element(OF_Sim_Rev.begin(), OF_Sim_Rev.end()) / Runs;
+    } return *max_element(OF_Sim_Rev.begin(), OF_Sim_Rev.end()) / Runs;
 }
 
 float staticTwoFareSim(int split) {
@@ -94,9 +92,8 @@ float staticTwoFareSim(int split) {
     for (int run = 0; run < Runs; run++) {
         vector<vector<int>> stock(P, vector<int>(P, C));
         for (int t = 0; t < split; t++) {
-            float flip = Coin(Gen);
             for (int p1 = 0; p1 < P; p1++) {
-                if (flip < Alpha[t] && flip < Lambda[t][p1]) {
+                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p1]) {
                     for (int p2 = 0; p2 < P; p2++) {
                         stock[p1][p2] -= 1;
                         if (stock[p1][p2] > -1) { TF_Sim_Rev[p1][p2] += Prices[p1]; }
@@ -105,9 +102,8 @@ float staticTwoFareSim(int split) {
             }
         }
         for (int t = split; t < T; t++) {
-            float flip = Coin(Gen);
             for (int p2 = 0; p2 < P; p2++) {
-                if (flip < Alpha[t] && flip < Lambda[t][p2]) {
+                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p2]) {
                     for (int p1 = 0; p1 < P; p1++) {
                         stock[p1][p2] -= 1;
                         if (stock[p1][p2] > -1) { TF_Sim_Rev[p1][p2] += Prices[p2]; }
@@ -138,7 +134,7 @@ float realizeOptimalTFCalcSim(int split) {
             }
             if (lhs + rhs > best_calc_rev) { best_calc_rev = lhs + rhs; c1 = p1; c2 = p2; }
         }
-    } return TF_Sim_Rev[c1][c2];
+    } return TF_Sim_Rev[c1][c2] / Runs;
 }
 
 void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every time/capacity combination
