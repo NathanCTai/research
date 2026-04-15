@@ -8,12 +8,15 @@ using namespace std;
 
 const int T = 100, P = 41, Runs = 1000, Sims = 20; int C, Seed = 0; float K = 5.0;
 vector<vector<int>> TFPreCompP1DX(T), DPsugIDX(T);
-vector<vector<float>> Lambda(T);
-vector<float> Alpha(T, 0.0f), Gamma(T), Prices(P);
+vector<vector<float>> Lambda(T), TF_Sim_Rev(P, vector<float>(P, 0.0f));
+vector<float> Alpha(T), Gamma(T), Prices(P), Theta1(P), Theta2(P), ThetaMid(P), OF_Sim_Rev(P, 0.0f);
 mt19937 Gen(Seed); vector<string> Categories = {"Uniform", "Linear", "Exp_Gentle", "Exp_Steep", "Concave"};
 uniform_real_distribution<float> AlphaDist(0.5f, 1.0f), GammaDist(-0.1f, 0.1f), Coin(0.0f, 1.0f);
 
 void resetData() {
+    fill(Theta1.begin(), Theta1.end(), 0.0f);
+    fill(Theta2.begin(), Theta2.end(), 0.0f);
+    fill(ThetaMid.begin(), ThetaMid.end(), 0.0f);
     fill(Alpha.begin(), Alpha.end(), 0.0f);
     fill(Gamma.begin(), Gamma.end(), 0.0f);
     Lambda.assign(T, vector<float>(P, 0.0f));
@@ -33,6 +36,9 @@ void readData(int mode, float mult) {
         for (int p = 0; p < P; p++) {
             if (t == 0) { Prices[p] = float(p) / 2.0; }
             Lambda[t][p] = exp(-Gamma[t] * Prices[p]);
+            if (t < 20) { Theta1[p] += Alpha[t] * Lambda[t][p]; }
+            if (t > 19 && t < 50) { ThetaMid[p] += Alpha[t] * Lambda[t][p];}
+            if (t > 49) { Theta2[p] += Alpha[t] * Lambda[t][p]; }
         }
     } C = int(accumulate(Alpha.begin(), Alpha.end(), 0.0f) * mult * exp(-1));
 }
@@ -69,50 +75,70 @@ float simDP() {
 }
 
 float staticOneFareSim() {
-    vector<float> rev(P, 0.0f);
+    OF_Sim_Rev.assign(P, 0.0f);
     for (int run = 0; run < Runs; run++) {
-        vector<int> stock(P, C - 1);
+        vector<int> stock(P, C);
         for (int t = 0; t < T; t++) {
             for (int p = 0; p < P; p++) {
                 if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p] && stock[p] > 0) {
-                    stock[p] -= 1; rev[p] += Prices[p];
+                    stock[p] -= 1; OF_Sim_Rev[p] += Prices[p];
                 }
             }
         }
     }
-    return *max_element(rev.begin(), rev.end()) / Runs;
+    return *max_element(OF_Sim_Rev.begin(), OF_Sim_Rev.end()) / Runs;
 }
 
 float staticTwoFareSim(int split) {
-    vector<vector<float>> rev(P, vector<float>(P, 0.0f));
+    TF_Sim_Rev.assign(P, vector<float>(P, 0.0f));
     for (int run = 0; run < Runs; run++) {
         vector<vector<int>> stock(P, vector<int>(P, C));
         for (int t = 0; t < split; t++) {
+            float flip = Coin(Gen);
             for (int p1 = 0; p1 < P; p1++) {
-                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p1]) {
+                if (flip < Alpha[t] && flip < Lambda[t][p1]) {
                     for (int p2 = 0; p2 < P; p2++) {
                         stock[p1][p2] -= 1;
-                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p1]; }
+                        if (stock[p1][p2] > -1) { TF_Sim_Rev[p1][p2] += Prices[p1]; }
                     }
                 }
             }
         }
         for (int t = split; t < T; t++) {
+            float flip = Coin(Gen);
             for (int p2 = 0; p2 < P; p2++) {
-                if (Coin(Gen) < Alpha[t] && Coin(Gen) < Lambda[t][p2]) {
+                if (flip < Alpha[t] && flip < Lambda[t][p2]) {
                     for (int p1 = 0; p1 < P; p1++) {
                         stock[p1][p2] -= 1;
-                        if (stock[p1][p2] > -1) { rev[p1][p2] += Prices[p2]; }
+                        if (stock[p1][p2] > -1) { TF_Sim_Rev[p1][p2] += Prices[p2]; }
                     }
                 }
             }
         }
     }
     float max = 0.0;
-    for (const auto& row : rev)
+    for (const auto& row : TF_Sim_Rev)
         for (float val : row)
             if (val > max) max = val;
     return max / Runs;
+}
+
+float realizeOptimalTFCalcSim(int split) {
+    float best_calc_rev = 0.0f; int c1 = 0, c2 = 0;
+    for (int p1 = 0; p1 < P; p1++) {
+        for (int p2 = 0; p2 < P; p2++) {
+            float lhs = 0.0f, rhs = 0.0f;
+            if (split == 50) { 
+                lhs = min(Theta1[p1] + ThetaMid[p1], float(C)) * Prices[p1]; 
+                rhs = min(float(C - min(Theta1[p1] + ThetaMid[p1], float(C))), Theta2[p2]) * Prices[p2];
+            }
+            if (split == 20) {
+                lhs = min(Theta1[p1], float(C)) * Prices[p1]; 
+                rhs = min(float(C - min(Theta1[p1], float(C))), Theta2[p2] + ThetaMid[p2]) * Prices[p2];
+            }
+            if (lhs + rhs > best_calc_rev) { best_calc_rev = lhs + rhs; c1 = p1; c2 = p2; }
+        }
+    } return TF_Sim_Rev[c1][c2];
 }
 
 void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every time/capacity combination
@@ -157,7 +183,9 @@ int main() {
     ofstream data("data.csv");
     data << "mode,mult,";
     data << "TF_Recalc(10:20-80),TF_Recalc(5:20-80),TF_Recalc(10:50-50),TF_Recalc(5:50-50),";
-    data << "DP_Calc,DP_Sim,TF_Static_Sim(20-80),TF_Static_Sim(50-50),OF_Static_Sim,Seed\n";
+    data << "DP_Calc,DP_Sim,";
+    data << "TF_Static(20-80),TF_Realized(20-80),TF_Static(50-50),TF_Realized(50-50),";
+    data << "OF_Static,Seed\n";
     for (int sim = 1; sim <= Sims; sim++) {
         Seed = sim; Gen.seed(Seed);
         for (int mode = 0; mode < 5; mode++) {
@@ -169,7 +197,10 @@ int main() {
                 data << recalcTF(10) << "," << recalcTF(5) << ",";
                 fillTFrecalc(1); // 50-50 split
                 data << recalcTF(10) << "," << recalcTF(5) << ",";
-                data << calcDP() << "," << simDP() << "," << staticTwoFareSim(20) << "," << staticTwoFareSim(50) << "," << staticOneFareSim() << "," << Seed << "\n";
+                data << calcDP() << "," << simDP() << ",";
+                data << staticTwoFareSim(20) << "," << realizeOptimalTFCalcSim(20) << ",";
+                data << staticTwoFareSim(50) << "," << realizeOptimalTFCalcSim(50) << ",";
+                data << staticOneFareSim() << "," << Seed << "\n";
             }
         }
     }
