@@ -139,7 +139,7 @@ float realizeOptimalTFCalcSim(int split) {
 
 void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every time/capacity combination
     for (int t = 0; t < T; t++) {
-        TFPreCompP1DX[t].assign(C, 0); int split = 0;
+        TFPreCompP1DX[t].assign(C + 1, 0); int split = 0;
         for (int c = 0; c < C; c++) {
             if (table == 0) { split = T * 0.2 + t * 0.8; }
             else { split = T * 0.5 + t * 0.5; }
@@ -153,8 +153,7 @@ void fillTFrecalc(int table) { // Stores the INDICES of the optimal P1 at every 
                     float calc_rev = Prices[p1] * exp1 + Prices[p2] * min(float(c) - exp1, theta2);
                     if (calc_rev > best_rev) { best_p1_idx = p1; best_rev = calc_rev; }
                 }
-            }
-            TFPreCompP1DX[t][c] = best_p1_idx; 
+            } TFPreCompP1DX[t][c] = best_p1_idx; 
         }
     }
 }
@@ -171,8 +170,7 @@ float recalcTF(int gap) {
                 }
             }
         }
-    }
-    return rev / Runs;
+    } return rev / Runs;
 }
 
 int main() {
@@ -199,6 +197,5 @@ int main() {
                 data << staticOneFareSim() << "," << Seed << "\n";
             }
         }
-    }
-    return 0;
+    } return 0;
 }
